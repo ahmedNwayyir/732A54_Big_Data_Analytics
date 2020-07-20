@@ -1,0 +1,77 @@
+# Demos
+
+Setup:
+- Freshly installed Linux Mint 19.3.
+- Installed: VS Code, thinlinc, anaconda, git
+
+## demo1-git
+
+Open GitLab
+ssh-keygen
+Copy public key
+git clone <paste>
+
+
+## demo2-connect
+
+### SSH
+
+~/.ssh/config
+
+Host sigma
+Hostname sigma.nsc.liu.se
+Port 22
+User x_maxpf
+
+ssh-copy-id x_maxpf@sigma.nsc.liu.se
+
+ssh sigma
+
+Some commands: ls, mkdir, cd, vim, <arrow up>, history
+
+ssh x_maxpf@sigma.nsc.liu.se -X
+#ForwardX11Trusted yes to .ssh/config
+
+firefox
+export SBATCH_RESERVATION=devel
+spark_browse_historyserver -A liu-compute-2020-3 --reservation devel
+
+### Thinlinc - Sigma
+sigma.nsc.liu.se
+x_maxpf
+
+### ThinLin - University
+thinlinc.edu.liu.se
+maxpf364@student.liu.se
+
+
+## demo3-submit_a_job
+
+demo folder
+scp temperature_readings-small.csv  x_maxpf@sigma.nsc.liu.se:/home/x_maxpf/
+Adjust username
+sbatch run.q
+squeue -a
+squeue -A x_maxpf
+- tail -f file
+Look in output
+scp -r x_maxpf@sigma.nsc.liu.se:/home/x_maxpf/output* .
+
+## demo4-local-pyspark
+
+conda install pyspark
+java.lang.IllegalArgumentException: Unsupported class file major version 55
+java --version
+sudo apt install openjdk-8-jdk
+sudo update-alternatives --config java
+conda install juypter-lab
+
+# stuff to run always here such as class/def
+def main():
+    pass
+
+if __name__ == "__main__":
+   # stuff only to run when not called via 'import' here
+   main()
+
+   
