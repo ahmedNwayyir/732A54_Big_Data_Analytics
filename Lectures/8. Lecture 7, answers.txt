@@ -1,0 +1,49 @@
+Dear all,
+
+As promised, here are the solutions to the group activity and the quizzes that
+we have done in today's lecture session.
+
+* Slide 5: A possible option would be to use the modulo function with value
+10. Another option would be to simply use the last digit of each year value as
+its hash value.
+
+* Slide 6:  10
+
+* Slide 8:  4
+- Statement 1 is *not* correct because choosing one node to be the master for
+all database objects would mean that this node would need to hold the complete
+database, which is not what we want because it defies the purpose of using a
+distributed system.
+- Statement 2 is *not* correct because the, whenever the database object is
+written at the node that is the master for this object, this master propagates
+the write to the slaves which then update their copy.
+- Statement 3 is *not* correct cause the master node can also be used for
+reading.
+- Statement 4 is correct because we may have a master-slave system that
+guarantees only the BASE properties.
+
+* Slide 9:  4
+- Statement 1 is *not* correct because replicating all database objects to all
+nodes means that all nodes would end up with a full copy of the whole
+database, which is typically not what we want because it defies the purpose of
+using a distributed system.
+- Statement 2 is *not* correct because we may read any database object at any
+node that has a replica of the object. Notice, however, that some nodes may
+give you an outdated copy of the database object unless the system guarantees
+string consistency.
+- Statement 3 is *not* correct because multi-master replication does *not*
+prevent dynamic scale out.
+- Statement 4 is correct because with the suitable read quorums and write
+quorums we can achieve strong consistency in a multi-master system.
+
+* Slide 12:  1
+
+* Slide 17:  C
+For read consistency we need to satisfy R+W>N where N=5 and R=2.
+
+* Slide 18:  B
+For write consistency we need to satisfy 2*W>N where N=5.
+
+The slides are linked from the course Website, or you can download them
+directly from:
+https://www.youtube.com/watch?v=9i4NYT_tVA4
