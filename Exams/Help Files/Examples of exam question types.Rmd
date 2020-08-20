@@ -39,6 +39,11 @@ knitr::opts_chunk$set(echo = TRUE)
 - \textcolor{mycolor}{Nov 2019: Describe a concrete application/use case for which data scalability is important. Note that "scalability" is a key word in this question; it is not enough if your application/use case simply has to do with a huge amount of data.(1p)}  
 
   - An example of such an application is a user analysis and product recommendation application in an online shopping portal. The reason is that the number of users of the portal may increase, and so may the number of products or, for instance, the number of product reviews written by users. As a consequence, the amount of data that would have to be analyzed by the application may also increase. Of course, it would be undesirable if the increased amount of data has a negative impact on the performance of the application (or even of the shopping portal as a whole).
+  
+
+- \textcolor{mycolor}{May 2019: Describe an example use case / application for which read scalability is important but write scalability is not. (1p)}
+
+  - Netflix API, read scalability is much more important than write scalability because there are a growing number of users streaming (reading) their content but no need for write scalability
 
 - \textcolor{mycolor}{Nov 2019: Consider the following key-value database which contains three key-value pairs where the keys are user IDs and the values consist of a user name and an array of IDs of users that the current user likes (for instance, Alice likes Bob and Charlie).}
 
@@ -50,6 +55,22 @@ knitr::opts_chunk$set(echo = TRUE)
 > \textcolor{mycolor}{Describe how the types of queries typically implemented in a key-value store can be used to retrieve the user IDs of users named Alice.(1p)}
 
 > - The only way to query a key-value database is by get(key) operations. Since the keys in the given database are the user IDs and we cannot assume to know the IDs of the users named Alice, we have to go through all the keys of the database. That is, for every userID, we have to request the corresponding value by doing get(userID), then we have to look into the value to check whether the name related part of the value is the string "Alice", and checking the value part with name 'Alice' is something that would have to be implemented in an application program (rather than expressed as queries for the database system).
+
+
+- \textcolor{mycolor}{Describe the basic form of the wide-column database model and compare it to the relational data model (SQL databases).(2p)}
+
+  - Wide-column database is a set of “rows” each of which has a unique key, and a set of key-value pairs (called “columns”)
+  
+>> Wide-column databases are schema free: different rows may contain different columns in the same table
+
+>> Columns may be grouped into so called “column families”, hence, values are addressed by (row key, column family, column key)
+
+>> Data may be partitioned, based on row keys (horizontal partitioning), but also based on column families (vertical partitioning), or even on both
+
+>> No joins, must be implemented in the application logic
+
+>> And like SQL data bases Secondary indexes can be created over arbitrary columns
+
 
 - \textcolor{mycolor}{Nov 2019: Describe how the key-value database can be changed/extended such that retrieving the user IDs of users named Alice is more efficient.(1p)}
 
@@ -394,15 +415,48 @@ $$S_{abs} \leq S_{rel}$$
 - \textcolor{mycolor}{Spark-Q5: Modify the wordcount program by only considering words with at least 4 characters.}
 
 ## Cluster Resource Management
+- \textcolor{mycolor}{Aug 2019: what is/are the main advantage(s) of delegating resource management to MESOS or YARN for the owner of a cluster resource (e.g., a data center)? Justify your answer.(0.5p)}
+
+  - Can run multiple applications (e.g. Hadoop) on same cluster
+  
+>> Can mix task executions from concurrent applications using e.g. Hadoop (incl. different versions of it) and other frameworks (e.g. MPI) on same cluster à Diversity of programming models
+
+>> Can reuse resource management subsystem for different programming models which leads to a cleaner software structure for the framework (e.g. Hadoop) itself
+
+- \textcolor{mycolor}{Aug 2019: Why are resource management frameworks like MESOS and YARN more suitable for workloads consisting of (large) MapReduce jobs, in comparision to batch schedulers?(0.5p)}
+
+  - MESOS and YARN are designed to provide low latency dynamic resource allocation which is suitable for MapReduce framework where Map phases require different resources than Reduce phases
+  
+>> also in MESOS and Yarn status because task assignment are done through heartbeat connections that will provide advantage in hardware failure and job recovery
+
 - \textcolor{mycolor}{YARN-Q1: Why is it reasonable that Application Masters can request and return resources dynamically from/to the Resource Manager (within the maximum lease initially granted to their job by the RM), instead of requesting their maximum lease on all nodes immediately and keeping it throughout the job's lifetime? Contrast this mechanism to the resource allocation performed by batch queuing systems for clusters.}
 
+  - It makes resource management more fine grained and flexible, Application Master only request resources based on it's needs rather than having fixed resources which could be too big (waste of resources) or too small (which could cause failure)
+
 - \textcolor{mycolor}{YARN-Q2: Explain why the Node Manager's tasks are better performed in a daemon process controlled by the RM and not under the control of the framework-specific application.}
+
+  - Yarn(RM and NM) can protect itself from malicious applications because it lunches application master in a container not on the node itself
+  
+>> It shifts fault tolerance to the Application Master this reduce load on RM and make it fast recoverable and more scalable
+  
+>> It makes resource management more fine grained and flexible, Application Master only request resources based on it's needs rather than having fixed resources 
+  
+>> Because each application has it's own Application Master running in a container, Yarn could run multiple frameworks like Spark and MapReduce on the same cluster
 
 \center
 ## Machine Learning for Big Data
 - \textcolor{mycolor}{Nov 2019: Why Spark more suitable than MapReduce for implementing many machine learning algorithms?(1p)}
 
   - Many machine learning algorithms are iterative in nature and if MapReduce to be used each iteration will load the data from disk and that very time consuming, while in Spark iterations load data from memory or even cache if it is small enough which is much faster \newline
+  
+
+- \textcolor{mycolor}{Jan 2017: What is the main feature that distinguishes the Spark framework from the MapReduce framework? Show where this feature occurs in you sollutions to the two pervious questions (MWC and CV).(1p)}
+
+  - Spark add the transformations to a lineage graph without excuting when reading them (lazy evlaluation) and excute them only when it reachs an Action. This gives spark the flexibility to work on data localy and utilize the cache and RAM without unnecessary I/O and network communication with other nodes.
+  
+>> In the MWC question it occurs when we filter the "window" RDD where it wasn't evaluated until we compute the "class_1_count" were there was an action
+
+>> In CV question it occures when we filter the train and test data and map the testError and won't excute until we reached the reduce action in the second testError RDD
   
   
 - \textcolor{mycolor}{Nov 2019: Implement in Spark (PySpark) the following k-means algorithm} 
@@ -417,29 +471,62 @@ $$S_{abs} \leq S_{rel}$$
 > \textcolor{mycolor}{You can use the functions randint (A,B) which produces a random integer in the given interval, an distance (A,B) which returns the distance between two points.}
 
 ```{python echo=TRUE, eval=FALSE}
+import numpy as np
+import math 
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("K-means")
+sc = SparkContext.getOrCreate()
+
+# data = sc.textFile().split()
+
+# example of data
+data = ((2,1), (4,5), (1,3), (-2,1), (5,3), (1,1), (2,2.5), (3,5))
+# we use parallelize to partition the tuple 
+data_rdd = sc.parallelize(data).cache()
+
+
 def closestPoint(p, centers):
+  """
+  calculates the distance between data points and the current 
+  centroids and returns the index of the closest centroid which 
+  represents the the cluster number
+  """
   bestIndex = 0
-  closest = float("+inf")
+  closest = float(10000) # set it to a very high value 
   for i, center in enumerate(centers):
-    tempDist = np.sum((p - center) ** 2)
-    if temDist < closest:
+    # Or we could you use distance(p, centers[i])
+    tempDist = math.sqrt(((p[0]-center[0])**2)+((p[1]-center[1])**2)) 
+    if tempDist < closest:
       closest = tempDist
-      bestIndex = 1
+      bestIndex = i
   return bestIndex
   
-kPoints = data.takeSample(False, K, 1)
-tempDist = 1.0
+
+# kPoints are the intial centeroids where k is the number the centroids/clusters
+# otherwise we could use (randint(A,B), randint(A,B)) to select each centroid 
+# assuming the data comes in two dimensions and the points coordinates are integers
+
+K = 2  # number the centroids/clusters
+kPoints = data_rdd.takeSample(False, K, 1)  # intial centroids
+tempDist = 50.0  
+convergeDist = 1.0
 
 while tempDist > convergeDist:
-  closest = data.map(lambda p: (closestPoint(p, kPoints), (p, 1)))
+  # assigning points to clusters (cluster number, ((px,py), 1))
+  closest = data_rdd.map(lambda p: (closestPoint(p, kPoints), (p, 1)))
+  # combine into (points sum, points count)
   pointStats = closest.reduceByKey(lambda p1_c1, p2_c2: (p1_c1[0] + p2_c2[0], p1_c1[1] + p2_c2[1]))
-  newPoints = pointStats.map(lambda st: (st[0], st[1][0] / st[1][1])).collect()
-  
-  tempDist = sum(np.sum((kPoints[iK] - p) ** 2) for (iK, p) in newPoints)
-  
-  for (iK, p) in newPoints:
-    kPoints(iK) = p
-    
+  # take the new centroids as the average of each cluster and collect the results as 
+  # (cluster number, new centroid) at the driver node
+  newPoints = pointStats.map(lambda st: (st[0], (st[1][0][0] / st[1][1], st[1][0][1] / st[1][1]))).collect()
+  # calculate the distance between the old centroids and the new ones to measure convergance
+  tempDist = sum(math.sqrt(((kPoints[iK][0]-newp[0])**2) +
+             ((kPoints[iK][1]-newp[1])**2)) for (iK, newp) in newPoints)
+  # update to the new centroids
+  for (iK, newp) in newPoints:
+    kPoints[iK] = newp
+      
+
 print("Final centers: " + str(kPoints))
 ```
 
@@ -470,7 +557,7 @@ print("Final w: " + str(w))
 ```
 
 ```{python echo=TRUE, eval=FALSE}
-# Reading from file => getting the required data by map() => 
+# Reading from file => reformat it using map() => 
 # persisting in memory for faster access
 points = sc.textFile(...).map(...).persist()
 
@@ -486,6 +573,8 @@ def gradient(matrix, w):
   
 for i in range(iterations):
   w -= points.map(lambda m: gradient(m, w).reduce(lambda a,b: a+b))
+  
+print("Final w: " + str(w))
 ```
       
 - KNN
@@ -543,25 +632,90 @@ print(f"predicted class is: {pred[0][0]}")
    
 - Cross-Validation
 ```{python echo=TRUE, eval=FALSE}
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("KNN")
+sc = SparkContext.getOrCreate()
+
+# getting the data in a (y, (x1,...xn)) format where y is the class label 
+# and x1,...,xn are the predictive attribute values
+# mydata = sc.textFile().split().map().cache()
+
+
+# example of mydata
+mydata = ((0,(2,1)), (1,(4,5)), (0,(1,3)), (0,(-2,1)), (1,(5,3)), (0,(1,1)), (1, (2,2.5)), (1, (3,5)))
+data_rdd = sc.parallelize(mydata)
+
+
 # number of folds
-K = 3
+K = 2
 fold_size = int(len(mydata) / K)
 
+# ((y, (x1, x2)), fold id)
 CVdata = tuple((mydata[k:k + fold_size],k) for k in range(0, len(mydata), fold_size))
-CVdata = sc.parallelize(CVdata)
+CVdata = sc.parallelize(CVdata).cache()
 
 error = sc.emptyRDD()
-p = (2,3)
+p = (2,3) # point to classify
 for i in range(0, len(mydata), fold_size):
+    # divide data to train and the complement to test
     train = CVdata.filter(lambda x: x[1] != i).flatMap(lambda x: x[0])
     test  = CVdata.filter(lambda x: x[1] == i).flatMap(lambda x: x[0])
-    testError = test.foreach(lambda x: (x[1][0] - LR(p,i))**2, 1)
-    testError = sc.parallelize(testError).reduce(lambda a,b: (a[0]+b[0], a[1]+b[1]))
+    # (error, 1)
+    testError = test.map(lambda x: (x[0][0] - MWC(p,i,h))**2, 1)
+    # add all errors together as well as counts
+    testError = testError.reduce(lambda a,b: (a[0]+b[0], a[1]+b[1]))
+    # get the average error of each iteration
     error[i] = x[0]/x[1]
 
+# get the average test error of the whole cross validation
 MSE = mean(error)
 
-print(f"Average Test Error: {MSE}")
+print(f"Average Test Errors: {MSE}")
+```
+
+- Moving Window Classifier
+```{python echo=TRUE, eval=FALSE}
+from math import sqrt
+from pyspark import SparkContext, SparkConf
+conf = SparkConf().setAppName("Moving_Window_Classifier")
+sc = SparkContext.getOrCreate()
+
+# map the data to ((x1,...xn), t) format where t is the class label 
+# and x1,...,xn are the predictive attribute values
+mydata = sc.textFile().split().map().cache()
+
+
+# example of mydata
+# mydata = (((2,1), 0), ((4,5), 1), ((1,3), 0), ((-2,1), 1), ((5,3), 1), ((1,1), 0), ((2,2.5), 1), ((3,5), 1))
+# data_rdd = sc.parallelize(mydata)
+
+def getDistance(x1, x2):
+  """
+  calculates the distance between two points
+  """
+  n = len(x1)
+  distance = 0.0
+  for i in range(n):
+    distance += (x1[i] - x2[i])**2
+  return sqrt(distance)
+
+
+# (h, (x1,...,xn)) where h is the diameter of the moving window
+# and (x1,...,xn) is the point of interest, in this case it have 2 attributes
+h = 2
+p = (h, (3,1))
+# Broadcast the parameters to all nodes 
+bc = sc.broadcast(p)
+
+window = mydata.filter(lambda a: getDistance(a[0], bc.value[1]) <= h) 
+class_1_count = window.values().sum()
+total_count = window.map(lambda a: len(a)).count()
+
+
+if class_1_count > total_count-class_1_count:
+    print(f"predicted class is: 1")
+else:
+    print("predicted class is: 0")        
 ```
 
 
