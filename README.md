@@ -3,8 +3,6 @@ Linköping University, 2nd semester 2020
 
 ## Intended learning outcomes
 
-After completed the course, the student should on an advanced level be able to:
-
 - collect and store Big Data in a distributed computer environment
 - perform basic queries to a database operating on a distributed file system
 - account for basic principles of parallel computations
